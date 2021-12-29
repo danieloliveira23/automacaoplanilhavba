@@ -1,0 +1,191 @@
+    Sub extrairarquivo()
+
+Application.ScreenUpdating = False
+
+    'Add guia para colar conteudo
+    Sheets.Add
+    ActiveSheet.Name = "PEDIDO"
+
+    'Configura pack
+    pack = Range("PACKS").Value
+    For i = 1 To pack
+    Sheets("Pack").Select
+    
+    On Error Resume Next
+    ActiveSheet.ShowAllData
+    On Error GoTo 0
+    
+    ActiveSheet.Range("$A$1:$E$1048576").AutoFilter Field:=1, Criteria1:=i, _
+    Operator:=xlAnd
+    
+    'Copia antes de add
+    Range("A1").CurrentRegion.Copy
+    
+    'Adicionou cola
+    Sheets.Add
+    
+    ActiveSheet.Paste
+    
+    X = ActiveSheet.Range("A1").CurrentRegion.Columns.Count + 2
+    
+    Sheets("MODELO").Range("A1").CurrentRegion.Copy Destination:=ActiveSheet.Cells(1, X)
+    
+    ActiveSheet.Name = i
+    
+    y = Range("A1").CurrentRegion.Columns.Count
+    Z = Range("A1").CurrentRegion.Rows.Count
+    Range(Cells(2, 3), Cells(Z, y)).Copy Destination:=ActiveSheet.Cells(2, 7)
+    
+    'Cola embarque
+    Range(Cells(2, 2), Cells(Z, 2)).Copy Destination:=Cells(2, 13)
+    
+    'Sacar colunas
+    Columns("A:F").Delete
+    
+    'Configura campo de cnpj como texto
+    Columns("M:M").Select
+    Selection.TextToColumns Destination:=Range("M1"), DataType:=xlDelimited, _
+    TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=True, _
+    Semicolon:=False, Comma:=False, Space:=False, Other:=False, FieldInfo _
+    :=Array(1, 2), TrailingMinusNumbers:=True
+    
+    
+    Next
+    
+    
+    'looping por registro cnpj (parte 2 do codigo)
+    
+    Sheets("Lojas").Select
+    
+    a = ActiveSheet.Range("A1").CurrentRegion.Rows.Count
+    b = ActiveSheet.Range("A1").CurrentRegion.Columns.Count
+    
+    On Error Resume Next
+    ActiveWorkbook.Names("valores").Delete
+    On Error GoTo 0
+    
+    Range(Cells(2, b), Cells(a, b)).Name = "valores"
+    
+    
+
+    
+    For i = 1 To pack
+    
+        For Each cell In Range("valores")
+        Sheets("Lojas").Select
+        cell.Select
+        
+        ActiveCell.Offset(0, 1).Formula = "=IFERROR(SEARCH(" & i & ",RC[-1]),""erro"")"
+        
+            If ActiveCell.Offset(0, 1).Value <> "erro" Then
+            
+                'Ação filtrar
+                Range("CRIT").Value = ActiveCell.Offset(0, -5).Value
+                Sheets(i).Select
+                Cells(2, 13).Select
+                
+                Do While ActiveCell.Offset(0, -6) <> ""
+                
+                ActiveCell.FormulaR1C1 = "=CRIT"
+                ActiveCell.Offset(1, 0).Select
+
+                
+                
+                
+                Loop
+                
+                Columns("M:M").Select
+                Selection.Copy
+                Selection.PasteSpecial Paste:=xlPasteValues
+                
+                Range("A1").CurrentRegion.Copy
+                Sheets("PEDIDO").Select
+                
+
+                    
+                        c = ActiveSheet.Range("A1").CurrentRegion.Rows.Count + 1
+                        Cells(c, 1).Select
+                        ActiveSheet.Paste
+                        ActiveCell.Select
+                        If ActiveCell.Row = 2 Then
+                        
+                        Else
+                        
+                        Selection.EntireRow.Delete
+                        
+                        End If
+            
+                
+
+                
+                Else
+            
+            End If
+            
+        
+            
+        Next
+        
+        
+    Next
+    
+    'Zera conteudo de lojas
+    Sheets("Lojas").Columns("I:I").Clear
+    
+    'Remove planilhas que criou
+    
+    For i = 1 To pack
+    
+    nome = "" & i & ""
+    
+    Application.DisplayAlerts = False
+    Sheets(nome).Select
+    ActiveSheet.Delete
+    Application.DisplayAlerts = True
+    
+    
+    Next
+    
+   
+
+            
+        
+    Range("CRIT").ClearContents
+    
+    
+    'Salvar guia pedido como csv
+    t = Sheets("PEDIDO").Range("A2").CurrentRegion.Columns.Count + 1
+    
+    Sheets("PEDIDO").Cells(1, t).Value = ThisWorkbook.Path & "\" & "Pedido.csv"
+    
+    Sheets("PEDIDO").Range("A2").CurrentRegion.Copy
+    Workbooks.Add
+    ActiveSheet.Paste
+    
+    Application.DisplayAlerts = False
+    'ChDir "C:\Users\daniel.silva\Downloads\bases angela\salvar aqui"
+    
+        ActiveWorkbook.SaveAs Filename:=Cells(1, t).Value, FileFormat:= _
+        xlCSVUTF8, CreateBackup:=False
+        
+        Cells(1, t).Clear
+        
+        ActiveWorkbook.Save
+
+    ActiveWorkbook.Close
+    Application.DisplayAlerts = True
+    
+    ThisWorkbook.Activate
+    Application.DisplayAlerts = False
+    Sheets("PEDIDO").Delete
+    Application.DisplayAlerts = False
+    
+    
+    
+    Sheets("Lojas").Select
+    
+    MsgBox "Se foi !", vbInformation
+    
+
+Application.ScreenUpdating = True
+End Sub
